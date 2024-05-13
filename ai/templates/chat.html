@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Interface</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+        transition: background-color 0.5s ease;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 50px;
+      }
+
+      .top-bar {
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: #fff;
+        text-align: center;
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 20px;
+        margin-bottom: 10px;
+        background-color: #007bff;
+        color: #fff;
+        border-radius: 10px;
+      }
+
+      .chat-area {
+        width: 100%;
+        max-width: 600px;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .message {
+        margin-bottom: 10px;
+      }
+
+      .user-message {
+        color: #007bff;
+      }
+
+      .bot-message {
+        color: #28a745;
+      }
+
+      #input-text {
+        border-radius: 5px;
+      }
+
+      #chat-form button {
+        border-radius: 5px;
+      }
+
+      .toggle-label {
+        margin-right: 10px;
+      }
+
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .toggle-slider {
+        background-color: #2196f3;
+      }
+
+      input:checked + .toggle-slider:before {
+        transform: translateX(26px);
+      }
+
+      .loader {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #28a745;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-bar">
+        <h3>Chat Interface</h3>
+        <label class="toggle-label" for="mode-toggle">Night Mode</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="mode-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="sidebar bg-red-200">
+        <h3>Suggested Prompts</h3>
+        <ul>
+          <li>What's the weather like?</li>
+          <li>Tell me a joke!</li>
+          <li>Define a word for me</li>
+          <!-- Add more prompts as needed -->
+        </ul>
+      </div>
+      <div class="chat-area" id="chat-box">
+        <!-- Chat messages will appear here -->
+      </div>
+      <form id="chat-form">
+        {% csrf_token %}
+        <div class="input-group">
+          <input
+            type="text"
+            id="input-text"
+            class="form-control"
+            placeholder="Type your message..."
+          />
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-primary">Send</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        $("#mode-toggle").change(function () {
+          if ($(this).is(":checked")) {
+            $("body").css("background-color", "#333");
+            $(".top-bar, .sidebar, .message").css("color", "#fff");
+            $(".chat-area").css("background-color", "#222");
+          } else {
+            $("body").css("background-color", "#f8f9fa");
+            $(".top-bar, .sidebar, .message").css("color", "#000");
+            $(".chat-area").css("background-color", "#fff");
+          }
+        });
+
+        $("#chat-form").submit(function (event) {
+          event.preventDefault();
+          var user_input = $("#input-text").val();
+          $("#chat-box").append(
+            '<div class="message user-message"><strong>You:</strong> ' +
+              user_input +
+              "</div>"
+          );
+          $("#input-text").val("");
+          $("#chat-box").append(
+            '<div class="message bot-message"><div class="loader"></div></div>'
+          );
+          $.ajax({
+            type: "POST",
+            url: "",
+            data: {
+              input_text: user_input,
+              csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val(),
+            },
+            success: function (response) {
+              $(".loader").remove();
+              $("#chat-box").append(
+                '<div class="message bot-message"><strong>Bot:</strong> ' +
+                  response.response +
+                  "</div>"
+              );
+              $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
+            },
+            error: function (xhr, errmsg, err) {
+              console.log(xhr.status + ": " + xhr.responseText);
+            },
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
